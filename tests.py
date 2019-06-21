@@ -16,6 +16,20 @@ class TestX(unittest.TestCase):
         x.add('beach')
         self.assertEqual(''.join(x.to_xml_lines(0, 0)), '<body><beach></beach></body>')
 
+    def test_nested_with_attributes(self):
+        x = X('vacation', style='family', source='contest')
+        x.add('destination', city='Venice', country='Italy')
+        x.add('activities').add('guided-tour', vehicle='gondola')
+        self.assertEqual(str(x), dedent('''
+            <vacation style="family" source="contest">
+              <destination city="Venice" country="Italy">
+              </destination>
+              <activities>
+                <guided-tour vehicle="gondola">
+                </guided-tour>
+              </activities>
+            </vacation>
+        ''').strip())
 
 if __name__ == '__main__':
     unittest.main()
