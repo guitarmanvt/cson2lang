@@ -17,7 +17,9 @@ def read_input(filename):
 # Using globals cuz lazy.
 data = {} # input data from CSON
 doc = RawDoc()  # output XML structure to be dumped as lang spec
+# References to parts of the XML output structure:
 lang = None
+styles = None
 
 # Accessor functions/lambdas for terseness.
 lang_id = lambda : data['scopeName'].split('.')[-1]
@@ -55,17 +57,47 @@ def metadata():
     mdata.add('property', name='block-comment-start').text(block_comment_start())
     mdata.add('property', name='block-comment-end').text(block_comment_end())
 
+
+def add_style(id, name=None, map=None):
+    name = name if name else id.title()
+    map = map if map else 'def:{}'.format(id)
+    styles.add('style', id=id, name=name, **{'map-to': map}).attribute_order('id', 'name')
+
+
 def styles():
+    global styles
     mapto = lambda x: {'map-to': x}
-    st = lang.add('styles')
-    st.add('style', id='keyword', name='Keyword', **mapto('def:keyword')).attribute_order('id', 'name')
-    #st.add('style', id='comment', name='Comment', **mapto('def:comment'))
+    styles = lang.add('styles')
+
+    #_add_style('keyword', 'Keyword', 'def:keyword')
+    #_add_style('comment', 'Comment', 'def:comment')
+    #_add_style('number', 'Number', 'def:number')
+    #_add_style('constant', 'Constant', 'def:constant')
+
+
+NAME_FUDGE = {
+    'kwString': 'keyword',
+}
 
 def definitions():
+    styleref = lambda x: {'style-ref': x}
+
     defs = lang.add('definitions')
     top = defs.add('context', id=lang_id()).add('include')
-    kwds = top.add('context', id='keywords', **{'style-ref': 'keyword'})
-    kwds.add('keyword').text('resource')
+
+    #kwds = top.add('context', id='keywords', **{'style-ref': 'keyword'})
+    #kwds.add('keyword').text('resource')
+    #words = top.add('context', id='constant', **styleref('constant'))
+    #words.add('match', extended="true").text("\\b(?:true|false|null)\\b")
+
+    for name, details in repo().items():
+        name = NAME_FUDGE.get(name, name)
+        match = details.get('match')
+        if match:
+            ctx = top.add('context', id=name, **styleref(name))
+            ctx.add('match', extended='true').text(match)
+            add_style(name)
+        #elif start/end...
 
 def convert():
     # Put it all together.
