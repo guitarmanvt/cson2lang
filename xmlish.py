@@ -3,9 +3,12 @@
 Simplifications/limitations:
 - XML comments are only allowed as siblings to other tags and strictly formatted.
 - Internal Text is allowed, but cannot be intermixed with children or comments.
+- Attributes get scrambled by Python's key hashing. If order is really important,
+  then you should set `.attribute_order` after object construction.
 
 Yeah, I know it's limited.
 """
+from collections import OrderedDict
 import logging
 from textwrap import dedent, indent
 
@@ -34,12 +37,25 @@ class X(object):
     def __init__(self, tagname, **attributes):
         self.tagname = tagname
         self._text = None
-        self.attributes = attributes if attributes else dict()
+        self.attributes = attributes if OrderedDict(**attributes) else OrderedDict()
         self.children = []
+        self.attribute_order = []
 
     def _formatted_attributes(self):
         if self.attributes:
-            kvpairs = ('{}="{}"'.format(attr, val) for attr, val in sorted(self.attributes.items()))
+            if self.attribute_order:
+                # Return attributes in a specific order. Required by some Schema.
+                ordered_attrs = []
+                for attr in self.attribute_order:
+                    val = self.attributes.get(attr)
+                    if val:
+                        ordered_attrs.append((attr, val))
+                unordered = [key for key in self.attributes.keys() if key not in self.attribute_order]
+                ordered_attrs.extend((key, self.attributes[key]) for key in sorted(unordered))
+            else:
+                # sort alphabetically
+                ordered_attrs = sorted(self.attributes.items())
+            kvpairs = ('{}="{}"'.format(attr, val) for attr, val in ordered_attrs)
             formatted_attrs = ' ' + ' '.join(kvpairs)
         else:
             formatted_attrs = ''
