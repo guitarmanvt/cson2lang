@@ -4,7 +4,7 @@ Simplifications/limitations:
 - XML comments are only allowed as siblings to other tags and strictly formatted.
 - Internal Text is allowed, but cannot be intermixed with children or comments.
 - Attributes get scrambled by Python's key hashing. If order is really important,
-  then you should set `.attribute_order` after object construction.
+  call `.attribute_order()` after object construction.
 
 Yeah, I know it's limited.
 """
@@ -39,18 +39,18 @@ class X(object):
         self._text = None
         self.attributes = attributes if OrderedDict(**attributes) else OrderedDict()
         self.children = []
-        self.attribute_order = []
+        self._aorder = []
 
     def _formatted_attributes(self):
         if self.attributes:
-            if self.attribute_order:
+            if self._aorder:
                 # Return attributes in a specific order. Required by some Schema.
                 ordered_attrs = []
-                for attr in self.attribute_order:
+                for attr in self._aorder:
                     val = self.attributes.get(attr)
                     if val:
                         ordered_attrs.append((attr, val))
-                unordered = [key for key in self.attributes.keys() if key not in self.attribute_order]
+                unordered = [key for key in self.attributes.keys() if key not in self._aorder]
                 ordered_attrs.extend((key, self.attributes[key]) for key in sorted(unordered))
             else:
                 # sort alphabetically
@@ -77,6 +77,13 @@ class X(object):
         if self.children:
             raise ValueError('Node has children and cannot have text.')
         self._text = text
+        return self  # in fluent style
+
+    def attribute_order(self, *order):
+        if self._aorder:
+            raise ValueError('attribute order is already set')
+        self._aorder = order[:]
+        return self  # in fluent style
 
     def to_xml_lines(self, margin=0, indent=2):
         output = []

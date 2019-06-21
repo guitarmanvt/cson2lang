@@ -23,7 +23,7 @@ class TestX(unittest.TestCase):
 
     def test_nested_with_attributes(self):
         x = X('vacation', style='family', source='contest')
-        x.attribute_order = ['style', 'source']  # non-alphabetical
+        x.attribute_order('style', 'source')
         x.add('destination', city='Venice', country='Italy')
         # NOTE: This is a "fluent" usage:
         x.add('activities').add('guided-tour', vehicle='gondola')
@@ -45,7 +45,7 @@ class TestX(unittest.TestCase):
 class TestRawDocAndY(unittest.TestCase):
     def test_rawdoc_with_y_and_comment(self):
         doc = RawDoc()
-        doc.add(Y('xml', version='1.0', encoding='UTF-8')).attribute_order = ['version', 'encoding']
+        doc.add(Y('xml', version='1.0', encoding='UTF-8')).attribute_order('version')
         doc.add(C(dedent('''
             This is a
             multi-line
