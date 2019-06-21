@@ -19,8 +19,13 @@ def convert(data):
     # Extract data bits into enclosing context.
     lang_id = data['scopeName'].split('.')[-1]
     name = data['name']
+    globs = ';'.join('*.{}'.format(x) for x in data['fileTypes'])
+    repo = data['repository']
+    comment_markers = [(d['begin'], d['end']) for d in repo['comment']['patterns']]
+    line_comments = [c[0] for c in comment_markers if c[1] == '\\n']
+    line_comment_start = line_comments[0]
 
-    # Convert in enclosed functions for readability.
+    # Converter functions.
     def header():
         doc.add(Y('xml', version='1.0', encoding='UTF-8'))
         doc.add(C('Syntax highlighting for the {} language'.format(name)))
@@ -29,6 +34,8 @@ def convert(data):
         lang = doc.add('language', id=lang_id, name=name, version=SPEC_VERSION, section='Sources')
         metadata = lang.add('metadata')
         # metadata.add('property', name='mimetypes').text('XXX')  # XXX: CSON doesn't support mimetypes?
+        metadata.add('property', name='globs').text(globs)
+        metadata.add('property', name='line-comment-start').text(line_comment_start)
 
 
     # Put it all together.
