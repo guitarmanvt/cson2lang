@@ -13,46 +13,54 @@ def read_input(filename):
         data = cson.load(infile)
     return data
 
-def convert(data):
-    doc = RawDoc()
 
-    # Extract data bits into enclosing context.
-    lang_id = data['scopeName'].split('.')[-1]
-    name = data['name']
-    globs = ';'.join('*.{}'.format(x) for x in data['fileTypes'])
-    repo = data['repository']
-    comment_markers = [(d['begin'], d['end']) for d in repo['comment']['patterns']]
-    line_comments = [c[0] for c in comment_markers if c[1] == '\\n']
-    block_comments = [b for b in comment_markers if b[1] != '\\n']
-    line_comment_start = line_comments[0]
-    block_comment_start = block_comments[0][0]
-    block_comment_end = block_comments[0][1]
+# Using globals cuz lazy.
+data = {} # input data from CSON
+doc = RawDoc()  # output XML structure to be dumped as lang spec
 
-    # Converter functions.
-    def header():
-        doc.add(Y('xml', version='1.0', encoding='UTF-8'))
-        doc.add(C('Syntax highlighting for the {} language'.format(name)))
+# Accessor functions/lambdas for terseness.
+lang_id = lambda : data['scopeName'].split('.')[-1]
+name = lambda : data['name']
+globs = lambda : ';'.join('*.{}'.format(x) for x in data['fileTypes'])
+repo = lambda : data['repository']
 
-    def language():
-        lang = doc.add('language', id=lang_id, name=name, version=SPEC_VERSION, section='Sources')
-        metadata = lang.add('metadata')
-        # metadata.add('property', name='mimetypes').text('XXX')  # XXX: CSON doesn't support mimetypes?
-        metadata.add('property', name='globs').text(globs)
-        metadata.add('property', name='line-comment-start').text(line_comment_start)
-        metadata.add('property', name='block-comment-start').text(block_comment_start)
-        metadata.add('property', name='block-comment-end').text(block_comment_end)
+def comment_markers():
+    return [(d['begin'], d['end']) for d in
+            repo().get('comment', {}).get('patterns', [])]
 
+line_comments = lambda : [c[0] for c in comment_markers() if c[1] == '\\n']
+block_comments = lambda : [b for b in comment_markers() if b[1] != '\\n']
+line_comment_start = lambda : line_comments()[0] if line_comments() else None
+block_comment_start = lambda : block_comments()[0][0] if block_comments() else None
+block_comment_end = lambda : block_comments()[0][1] if block_comments() else None
 
+# Converter functions.
+def header():
+    doc.add(Y('xml', version='1.0', encoding='UTF-8'))
+    doc.add(C('Syntax highlighting for the {} language'.format(name())))
+
+def language():
+    lang = doc.add('language', id=lang_id, name=name, version=SPEC_VERSION, section='Sources')
+    metadata(lang)
+
+def metadata(lang):
+    mdata = lang.add('metadata')
+    # mdata.add('property', name='mimetypes').text('XXX')  # XXX: CSON doesn't support mimetypes?
+    mdata.add('property', name='globs').text(globs())
+    mdata.add('property', name='line-comment-start').text(line_comment_start())
+    mdata.add('property', name='block-comment-start').text(block_comment_start())
+    mdata.add('property', name='block-comment-end').text(block_comment_end())
+
+def convert():
     # Put it all together.
     header()
     language()
-    return doc
 
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    input_data = read_input(filename)
+    data.update(read_input(filename))
     with open(filename + '.json', 'w') as json_debug_file:
-        json.dump(input_data, json_debug_file)
-    doc = convert(input_data)
+        json.dump(data, json_debug_file)
+    convert()
     print(str(doc))
