@@ -6,7 +6,7 @@ import cson
 
 from xmlish import C, RawDoc, X, Y
 
-SPEC_VERSION = '1.0'  # XXX: Make this an argument?
+SPEC_VERSION = '2.0'  # Must be 2.0 per the spec
 
 def read_input(filename):
     with open(filename, 'rb') as infile:
@@ -17,6 +17,7 @@ def read_input(filename):
 # Using globals cuz lazy.
 data = {} # input data from CSON
 doc = RawDoc()  # output XML structure to be dumped as lang spec
+lang = None
 
 # Accessor functions/lambdas for terseness.
 lang_id = lambda : data['scopeName'].split('.')[-1]
@@ -36,20 +37,36 @@ block_comment_end = lambda : block_comments()[0][1] if block_comments() else Non
 
 # Converter functions.
 def header():
-    doc.add(Y('xml', version='1.0')) #, encoding='UTF-8')) - gets sorted wrong :P
+    doc.add(Y('xml', version="1.0", encoding='UTF-8')).attribute_order('version', 'encoding')
     doc.add(C('Syntax highlighting for the {} language'.format(name())))
 
 def language():
+    global lang
     lang = doc.add('language', id=lang_id(), name=name(), version=SPEC_VERSION, section='Sources')
-    metadata(lang)
+    metadata()
+    styles()
+    definitions()
 
-def metadata(lang):
+def metadata():
     mdata = lang.add('metadata')
     # mdata.add('property', name='mimetypes').text('XXX')  # XXX: CSON doesn't support mimetypes?
     mdata.add('property', name='globs').text(globs())
     mdata.add('property', name='line-comment-start').text(line_comment_start())
     mdata.add('property', name='block-comment-start').text(block_comment_start())
     mdata.add('property', name='block-comment-end').text(block_comment_end())
+
+def styles():
+    mapto = lambda x: {'map-to': x}
+    st = lang.add('styles')
+    keywords = st.add('style', id='keyword', name='Keyword', **mapto('def:keyword')).attribute_order('id', 'name')
+    keywords.add('keyword').text('resource')
+    #st.add('style', id='comment', name='Comment', **mapto('def:comment'))
+
+def definitions():
+    defs = lang.add('definitions')
+    defs.add('context', id='keywords', **{'style-ref': 'keyword'})
+    top = defs.add('context', id=lang_id()).add('include')
+    top.add('context', ref='keyword')
 
 def convert():
     # Put it all together.
