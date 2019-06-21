@@ -1,7 +1,7 @@
 from textwrap import dedent
 import unittest
 
-from xmlish import X
+from xmlish import C, RawDoc, X, Y
 
 class TestX(unittest.TestCase):
 
@@ -33,6 +33,25 @@ class TestX(unittest.TestCase):
                 <guided-tour vehicle="gondola"/>
               </activities>
             </vacation>
+        ''').strip())
+
+
+class TestRawDocAndY(unittest.TestCase):
+    def test_rawdoc_with_y_and_comment(self):
+        doc = RawDoc()
+        doc.add(Y('xml', version='1.0', encoding='UTF-8'))
+        doc.add(C(dedent('''
+            This is a
+            multi-line
+            comment.
+        ''').strip()))
+        self.assertEqual(str(doc), dedent('''
+            <?xml encoding="UTF-8" version="1.0"?>
+            <!--
+            This is a
+            multi-line
+            comment.
+            -->
         ''').strip())
 
 if __name__ == '__main__':
