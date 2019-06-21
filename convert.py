@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 import sys
 import json
 
@@ -7,12 +8,18 @@ import cson
 from xmlish import C, RawDoc, X, Y
 
 SPEC_VERSION = '2.0'  # Must be 2.0 per the spec
+NAME_FUDGE = {  # cson name: lang name
+    'kwString': 'keyword',
+    'array': 'skip',
+    'interpolation': 'skip',
+    'object': 'skip',
+    'heredoc': 'skip',
+}
 
 def read_input(filename):
     with open(filename, 'rb') as infile:
         data = cson.load(infile)
     return data
-
 
 # Using globals cuz lazy.
 data = {} # input data from CSON
@@ -37,10 +44,12 @@ line_comment_start = lambda : line_comments()[0] if line_comments() else None
 block_comment_start = lambda : block_comments()[0][0] if block_comments() else None
 block_comment_end = lambda : block_comments()[0][1] if block_comments() else None
 
+
 # Converter functions.
 def header():
     doc.add(Y('xml', version="1.0", encoding='UTF-8')).attribute_order('version', 'encoding')
     doc.add(C('Syntax highlighting for the {} language'.format(name())))
+
 
 def language():
     global lang
@@ -48,6 +57,7 @@ def language():
     metadata()
     styles()
     definitions()
+
 
 def metadata():
     mdata = lang.add('metadata')
@@ -69,15 +79,6 @@ def styles():
     mapto = lambda x: {'map-to': x}
     styles = lang.add('styles')
 
-    #_add_style('keyword', 'Keyword', 'def:keyword')
-    #_add_style('comment', 'Comment', 'def:comment')
-    #_add_style('number', 'Number', 'def:number')
-    #_add_style('constant', 'Constant', 'def:constant')
-
-
-NAME_FUDGE = {
-    'kwString': 'keyword',
-}
 
 def definitions():
     styleref = lambda x: {'style-ref': x}
@@ -85,19 +86,41 @@ def definitions():
     defs = lang.add('definitions')
     top = defs.add('context', id=lang_id()).add('include')
 
-    #kwds = top.add('context', id='keywords', **{'style-ref': 'keyword'})
-    #kwds.add('keyword').text('resource')
-    #words = top.add('context', id='constant', **styleref('constant'))
-    #words.add('match', extended="true").text("\\b(?:true|false|null)\\b")
+    # Comments
+    safestars = lambda x: x.replace('*', '\\*')
+    add_style('comment')
+    for n, (start, end) in enumerate(comment_markers()):
+        end = '$' if end == '\\n' else end
+        start = safestars(start)
+        end = safestars(end)
+        name = 'comment_type_{}'.format(n)
+        ctx = top.add('context', id=name, **styleref('comment'))
+        ctx.add('start').text(start)
+        ctx.add('end').text(end)
 
     for name, details in repo().items():
         name = NAME_FUDGE.get(name, name)
+        if name == 'skip':
+            continue
+
+        # Simple regexes.
         match = details.get('match')
         if match:
             ctx = top.add('context', id=name, **styleref(name))
             ctx.add('match', extended='true').text(match)
             add_style(name)
-        #elif start/end...
+            continue
+
+        # Start/end definitions
+        start = details.get('begin')
+        end = details.get('end')
+        if start and end:
+            ctx = top.add('context', id=name, **styleref(name))
+            ctx.add('start').text(start)
+            ctx.add('end').text(end)
+            add_style(name)
+            continue
+
 
 def convert():
     # Put it all together.
