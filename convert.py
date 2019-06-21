@@ -36,11 +36,11 @@ block_comment_end = lambda : block_comments()[0][1] if block_comments() else Non
 
 # Converter functions.
 def header():
-    doc.add(Y('xml', version='1.0', encoding='UTF-8'))
+    doc.add(Y('xml', version='1.0')) #, encoding='UTF-8')) - gets sorted wrong :P
     doc.add(C('Syntax highlighting for the {} language'.format(name())))
 
 def language():
-    lang = doc.add('language', id=lang_id, name=name, version=SPEC_VERSION, section='Sources')
+    lang = doc.add('language', id=lang_id(), name=name(), version=SPEC_VERSION, section='Sources')
     metadata(lang)
 
 def metadata(lang):
