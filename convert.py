@@ -58,15 +58,14 @@ def metadata():
 def styles():
     mapto = lambda x: {'map-to': x}
     st = lang.add('styles')
-    keywords = st.add('style', id='keyword', name='Keyword', **mapto('def:keyword')).attribute_order('id', 'name')
-    keywords.add('keyword').text('resource')
+    st.add('style', id='keyword', name='Keyword', **mapto('def:keyword')).attribute_order('id', 'name')
     #st.add('style', id='comment', name='Comment', **mapto('def:comment'))
 
 def definitions():
     defs = lang.add('definitions')
-    defs.add('context', id='keywords', **{'style-ref': 'keyword'})
     top = defs.add('context', id=lang_id()).add('include')
-    top.add('context', ref='keyword')
+    kwds = top.add('context', id='keywords', **{'style-ref': 'keyword'})
+    kwds.add('keyword').text('resource')
 
 def convert():
     # Put it all together.
