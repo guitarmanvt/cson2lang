@@ -20,7 +20,7 @@ Copy the output file into wherever gtksourceview language specs live on your mac
 
 ## License Stuff
 
-The hcl.cson file is from MIT-licensed https://github.com/fd/language-hcl
+The hcl.cson file is from MIT-licensed https://github.com/fd/language-hcl . I did have to add block-comments to it, which are commented in the code; my edits may/may not actually work with Atom, and I don't care, so I didn't submit a PR to upstream.
 
 The other stuff is my original work. It's also MIT Licensed, but I hope you do good with it. (I'd love to hear about the good you're doing. Drop me a line!)
 

@@ -23,7 +23,10 @@ def convert(data):
     repo = data['repository']
     comment_markers = [(d['begin'], d['end']) for d in repo['comment']['patterns']]
     line_comments = [c[0] for c in comment_markers if c[1] == '\\n']
+    block_comments = [b for b in comment_markers if b[1] != '\\n']
     line_comment_start = line_comments[0]
+    block_comment_start = block_comments[0][0]
+    block_comment_end = block_comments[0][1]
 
     # Converter functions.
     def header():
@@ -36,6 +39,8 @@ def convert(data):
         # metadata.add('property', name='mimetypes').text('XXX')  # XXX: CSON doesn't support mimetypes?
         metadata.add('property', name='globs').text(globs)
         metadata.add('property', name='line-comment-start').text(line_comment_start)
+        metadata.add('property', name='block-comment-start').text(block_comment_start)
+        metadata.add('property', name='block-comment-end').text(block_comment_end)
 
 
     # Put it all together.

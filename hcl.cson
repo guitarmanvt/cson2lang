@@ -144,6 +144,12 @@
         'end': '\\n'
         'name': 'comment.line.pound.hcl'
       }
+      # I hacked this in here, because the CSON is missing block comments.
+      # I have no idea if this would actually work in Atom or not.
+      {
+        'begin': '/*'
+        'end': '*/'
+      }
     ]
 
   'heredoc':
