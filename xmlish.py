@@ -3,7 +3,6 @@
 Simplifications/limitations:
 - XML comments are only allowed as siblings to other tags and strictly formatted.
 - Internal Text is allowed, but cannot be intermixed with children or comments.
-- You want a tag with no attributes, you gotta do `X({'tagname': {}})`
 
 Yeah, I know it's limited.
 """
@@ -32,9 +31,9 @@ class C(object):
         return output
 
 class X(object):
-    def __init__(self, tagname, text=None, **attributes):
+    def __init__(self, tagname, **attributes):
         self.tagname = tagname
-        self.text = text
+        self._text = None
         self.attributes = attributes if attributes else dict()
         self.children = []
 
@@ -47,7 +46,7 @@ class X(object):
         return formatted_attrs
 
     def add(self, what, **attributes):
-        if self.text:
+        if self._text:
             raise ValueError('Node has text and cannot have children.')
         if type(what) in [C, X]:
             child = what
@@ -58,11 +57,18 @@ class X(object):
         self.children.append(child)
         return child
 
+    def text(self, text):
+        if self.children:
+            raise ValueError('Node has children and cannot have text.')
+        self._text = text
+
     def to_xml_lines(self, margin=0, indent=2):
         output = []
         formatted_attrs = self._formatted_attributes()
         spaces = ' ' * margin
-        if self.children or self.text:
+        if self._text:
+            output.append('{}<{}{}>{}</{}>'.format(spaces, self.tagname, formatted_attrs, self._text, self.tagname))
+        elif self.children:
             output.append('{}<{}{}>'.format(spaces, self.tagname, formatted_attrs))
             for child in self.children:
                 output.extend(child.to_xml_lines(margin + indent, indent))

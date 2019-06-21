@@ -35,6 +35,11 @@ class TestX(unittest.TestCase):
             </vacation>
         ''').strip())
 
+    def test_tag_with_text(self):
+        x = X('story')
+        x.text('It was a dark and stormy night...')
+        self.assertEqual(str(x), '<story>It was a dark and stormy night...</story>')
+
 
 class TestRawDocAndY(unittest.TestCase):
     def test_rawdoc_with_y_and_comment(self):
